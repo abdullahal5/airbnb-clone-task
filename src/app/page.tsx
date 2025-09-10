@@ -1,11 +1,13 @@
 import Navbar from "@/components/shared/Navbar";
 
-const HomePage = () => {
+const HomePage = async () => {
+  // const res = generateHotels();
+
+  // console.log(res);
   return (
     <div>
       <Navbar />
-      <div className="h-[200vh]">
-      </div>
+      <div className="h-[200vh]"></div>
     </div>
   );
 };

@@ -12,7 +12,6 @@ import {
   Compass,
   Briefcase,
   Globe,
-  Calendar,
   MapPin,
   ChevronDown,
   Minus,
@@ -21,6 +20,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
+import { DateRangePicker } from "../DateRange";
 
 export const navItems = [
   {
@@ -47,6 +47,11 @@ interface GuestCounts {
   pets: number;
 }
 
+interface DateRange {
+  startDate: Date | null;
+  endDate: Date | null;
+}
+
 const popularDestinations = [
   "New York, NY",
   "Los Angeles, CA",
@@ -61,8 +66,10 @@ const Navbar = () => {
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [searchLocation, setSearchLocation] = useState<string>("");
-  const [checkIn, setCheckIn] = useState<string>("");
-  const [checkOut, setCheckOut] = useState<string>("");
+  const [dateRange, setDateRange] = useState<DateRange>({
+    startDate: null,
+    endDate: null,
+  });
   const [guests, setGuests] = useState<GuestCounts>({
     adults: 1,
     children: 0,
@@ -74,6 +81,9 @@ const Navbar = () => {
   const { scrollY } = useScroll();
 
   useMotionValueEvent(scrollY, "change", (latest) => {
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) return;
+
     if (latest > 50) {
       setScrolled(true);
     } else {
@@ -129,16 +139,34 @@ const Navbar = () => {
     }
   };
 
+  const formatDate = (date: Date | null) => {
+    if (!date) return null;
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  const getDateDisplayText = () => {
+    if (dateRange.startDate && dateRange.endDate) {
+      return `${formatDate(dateRange.startDate)} - ${formatDate(
+        dateRange.endDate
+      )}`;
+    } else if (dateRange.startDate) {
+      return formatDate(dateRange.startDate);
+    }
+    return "Any week";
+  };
+
   return (
     <div
       ref={navbarRef}
       className="fixed top-0 inset-x-0 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-50"
     >
       <motion.nav className="flex flex-col gap-3 py-3 relative">
-        {/* Rest of your JSX remains the same */}
-        <motion.div className="flex items-center justify-between px-4 py-2">
+        <motion.div className="flex items-center justify-between px-4">
           {/* Logo */}
-          <Image src={"/logo.png"} width={200} height={100} alt="logo" />
+          <Image src={"/logo.png"} width={120} height={100} alt="logo" />
 
           {/* Animate nav items / filter replacement */}
           <div className="flex-1 flex justify-center items-center">
@@ -187,10 +215,10 @@ const Navbar = () => {
                     </span>
                     <div className="w-px h-5 bg-gray-300 mx-2" />
                     <span
-                      onClick={() => handleFilterClick("checkin")}
+                      onClick={() => handleFilterClick("dates")}
                       className="font-medium truncate"
                     >
-                      {checkIn || "Any week"}
+                      {getDateDisplayText()}
                     </span>
                     <div className="w-px h-5 bg-gray-300 mx-2" />
                     <span
@@ -233,9 +261,11 @@ const Navbar = () => {
               exit={{ opacity: 0, y: -20, height: 0 }}
               transition={{ duration: 0.3 }}
               className="relative z-50"
-              data-filter-bar="true"
             >
-              <div className="flex flex-col sm:flex-row items-stretch w-full max-w-4xl mx-auto rounded-2xl shadow-xl border border-neutral-200 overflow-visible bg-white">
+              <div
+                data-filter-bar="true"
+                className="flex flex-col sm:flex-row items-stretch w-full max-w-4xl mx-auto rounded-2xl shadow-xl border border-neutral-300 overflow-visible bg-white"
+              >
                 {/* Where */}
                 <div className="flex-1 relative">
                   <div
@@ -311,110 +341,61 @@ const Navbar = () => {
 
                 <div className="w-px bg-gray-200 hidden sm:block" />
 
-                {/* Check in */}
                 <div className="flex-1 relative">
                   <div
                     className="px-6 py-4 cursor-pointer hover:bg-gray-50 transition-colors duration-200 h-full flex flex-col justify-center"
                     onClick={() => {
                       setActiveDropdown(
-                        activeDropdown === "checkin" ? null : "checkin"
+                        activeDropdown === "dates" ? null : "dates"
                       );
                     }}
                   >
                     <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-semibold text-gray-900">
-                          Check in
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {checkIn || "Add dates"}
-                        </p>
+                      <div className="flex gap-8 w-full items-center justify-around">
+                        <div className="flex items-center justify-between w-full">
+                          <div>
+                            <p className="text-xs font-semibold text-gray-900">
+                              Check in
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {formatDate(dateRange.startDate) || "Add date"}
+                            </p>
+                          </div>
+
+                          <ChevronDown
+                            className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
+                              activeDropdown === "dates" ? "rotate-180" : ""
+                            }`}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between w-full">
+                          <div>
+                            <p className="text-xs font-semibold text-gray-900">
+                              Check out
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {formatDate(dateRange.endDate) || "Add date"}
+                            </p>
+                          </div>
+
+                          <ChevronDown
+                            className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
+                              activeDropdown === "dates" ? "rotate-180" : ""
+                            }`}
+                          />
+                        </div>
                       </div>
-                      <ChevronDown
-                        className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
-                          activeDropdown === "checkin" ? "rotate-180" : ""
-                        }`}
-                      />
                     </div>
                   </div>
 
-                  {/* Check in Dropdown */}
+                  {/* Date Range Dropdown */}
                   <AnimatePresence>
-                    {activeDropdown === "checkin" && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.2 }}
-                        className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-2xl z-[200] mt-2 min-w-[250px]"
-                      >
-                        <div className="p-4">
-                          <div className="relative">
-                            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                            <input
-                              type="date"
-                              value={checkIn}
-                              onChange={(e) => setCheckIn(e.target.value)}
-                              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
-                            />
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                <div className="w-px bg-gray-200 hidden sm:block" />
-
-                {/* Check out */}
-                <div className="flex-1 relative">
-                  <div
-                    className="px-6 py-4 cursor-pointer hover:bg-gray-50 transition-colors duration-200 h-full flex flex-col justify-center"
-                    onClick={() => {
-                      setActiveDropdown(
-                        activeDropdown === "checkout" ? null : "checkout"
-                      );
-                    }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-semibold text-gray-900">
-                          Check out
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {checkOut || "Add dates"}
-                        </p>
-                      </div>
-                      <ChevronDown
-                        className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
-                          activeDropdown === "checkout" ? "rotate-180" : ""
-                        }`}
+                    {activeDropdown === "dates" && (
+                      <DateRangePicker
+                        dateRange={dateRange}
+                        onDateChange={setDateRange}
+                        onClose={() => setActiveDropdown(null)}
                       />
-                    </div>
-                  </div>
-
-                  {/* Check out Dropdown */}
-                  <AnimatePresence>
-                    {activeDropdown === "checkout" && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.2 }}
-                        className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-2xl z-[200] mt-2 min-w-[250px]"
-                      >
-                        <div className="p-4">
-                          <div className="relative">
-                            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                            <input
-                              type="date"
-                              value={checkOut}
-                              onChange={(e) => setCheckOut(e.target.value)}
-                              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
-                            />
-                          </div>
-                        </div>
-                      </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
@@ -551,7 +532,7 @@ const Navbar = () => {
                                 onClick={() =>
                                   updateGuestCount("infants", true)
                                 }
-                                className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors"
+                                className="w-8 h-8 rounded-full border border-gray-400 transition-colors"
                               >
                                 <Plus size={16} />
                               </button>
